@@ -1,3 +1,5 @@
+#ARTHUR HENRIQUE DOS SANTOS SOUSA ALVES DE GODOY - 262032477
+
 import math
 
 # Começo da parte de treinamento
@@ -24,16 +26,16 @@ for i in range(1, 11):
     z = w1 * x1 + w2 * x2 + b
 
     # A sigmoide transforma o resultado em uma probabilidade
-    y_chapeu = 1 / (1 + math.exp(-z))
+    y2 = 1 / (1 + math.exp(-z))
 
     # Se a probabilidade for pelo menos 50%, considero como classe 1
-    if y_chapeu >= 0.5:
+    if y2 >= 0.5:
         classe = 1.0
     else:
         classe = 0.0
 
     # Aqui vejo a diferença entre o valor real e o previsto
-    erro = y - y_chapeu
+    erro = y - y2
 
     # Atualização dos pesos com base no erro
     w1 = w1 + eta * erro * x1
@@ -48,7 +50,7 @@ for i in range(1, 11):
 
     print(
         "Probabilidade: {:.2f}% | Previsto: {:.1f} | Real: {:.1f} | {}".format(
-            y_chapeu * 100,
+            y2 * 100,
             classe,
             y,
             resultado
