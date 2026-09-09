@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulação de Transmissão Industrial - Verificação de CRC</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --primary: #0033ad;
+      --primary-hover: #002277;
+      --success: #198754;
+      --danger: #dc3545;
+      --text: #212529;
+      --border: #ced4da;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e9ecef;
+    }
+
+    h1, h2, h3 {
+      color: var(--primary);
+      margin-top: 0;
+    }
+
+    .formula-box {
+      background-color: #eef2ff;
+      border-left: 4px solid var(--primary);
+      padding: 12px 20px;
+      font-family: monospace;
+      font-size: 1.1em;
+      margin: 15px 0;
+    }
+
+    .inputs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .inputs-grid input {
+      width: 100%;
+      padding: 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.secondary {
+      background-color: #6c757d;
+    }
+
+    button.secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .data-display {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .data-badge {
+      background: #e9ecef;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .data-badge.corrupted {
+      background: #f8d7da;
+      color: #842029;
+      border: 1px solid #f5c2c7;
+      text-decoration: line-through;
+    }
+
+    .status-banner {
+      padding: 15px;
+      border-radius: 6px;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 15px;
+      font-size: 1.1em;
+    }
+
+    .status-banner.success {
+      background-color: #d1e7dd;
+      color: #0f5132;
+      border: 1px solid #badbcc;
+    }
+
+    .status-banner.danger {
+      background-color: #f8d7da;
+      color: #842029;
+      border: 1px solid #f5c2c7;
+    }
+
+    .noise-info {
+      background-color: #fff3cd;
+      color: #664d03;
+      border: 1px solid #ffecb5;
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- Enunciado do Problema -->
+  <div class="card">
+    <h1>📡 Enunciado: Validação de CRC em Rede Industrial</h1>
+    <p>
+      Em uma arquitetura de rede industrial, o processo de transmissão de dados é dividido em duas etapas distintas:
+    </p>
+    <ul>
+      <li><strong>Remetente (Emissor):</strong> Calcula o código de verificação (<code>CRCenvio</code>) com base nos dados originais gerados pelos sensores e os transmite pela rede.</li>
+      <li><strong>Receptor (Destino):</strong> Recebe os dados após a passagem por um canal físico sujeito a interferências, recalcula o CRC do lado do destino (<code>CRCrecebido</code>) e o compara com o valor esperado.</li>
+    </ul>
+    
+    <p>O CRC (Cyclic Redundancy Code) é calculado de forma acumulativa elemento a elemento pela fórmula polinomial iterativa:</p>
+    <div class="formula-box">
+      crc_atual = (crc_anterior * 3 + leitura) mod 97
+    </div>
+    <p>
+      Sendo o CRC inicial igual a 0. A simulação sorteia um número aleatório de <strong>0 a 10</strong> para representar o ruído do canal.
+      Se o valor for <strong>0</strong>, a transmissão é limpa. Se for de <strong>1 a 10</strong>, o dado na posição correspondente é alterado na rede.
+    </p>
+  </div>
+
+  <!-- Painel de Entrada de Dados -->
+  <div class="card">
+    <h2>1. Emissor (Leitura dos Sensores)</h2>
+    <p>Insira 10 valores inteiros gerados pelos sensores ou clique em "Gerar Aleatórios":</p>
+    
+    <div class="inputs-grid" id="inputContainer">
+      <!-- Inputs gerados via JS -->
+    </div>
+
+    <div class="btn-group">
+      <button onclick="gerarDadosAleatorios()" class="secondary">Gerar Dados Aleatórios</button>
+      <button onclick="executarSimulacao()">Simular Transmissão</button>
+    </div>
+  </div>
+
+  <!-- Resultado da Simulação -->
+  <div class="card" id="painelResultado" style="display: none;">
+    <h2>2. Resultado da Transmissão</h2>
+    
+    <h3>📤 Dados Originais (Enviados)</h3>
+    <div class="data-display" id="dadosOriginais"></div>
+    <p><strong>CRC<sub>envio</sub> calculado:</strong> <span id="crcEnvioVal" class="data-badge"></span></p>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <h3>⚡ Canal de Comunicação (Simulação de Ruído)</h3>
+    <div class="noise-info" id="ruidoInfo"></div>
+
+    <h3>📥 Dados Recebidos no Destino</h3>
+    <div class="data-display" id="dadosRecebidos"></div>
+    <p><strong>CRC<sub>recebido</sub> recalculado:</strong> <span id="crcRecebidoVal" class="data-badge"></span></p>
+
+    <div id="statusBanner" class="status-banner"></div>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL_LEITURAS = 10;
+
+  // Inicializa os 10 campos de input
+  function inicializarInputs() {
+    const container = document.getElementById('inputContainer');
+    container.innerHTML = '';
+    const valoresIniciais = [12, 45, 67, 89, 23, 56, 78, 90, 34, 11];
+    
+    for (let i = 0; i < TOTAL_LEITURAS; i++) {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.id = `dado-${i}`;
+      input.value = valoresIniciais[i];
+      container.appendChild(input);
+    }
+  }
+
+  function gerarDadosAleatorios() {
+    for (let i = 0; i < TOTAL_LEITURAS; i++) {
+      document.getElementById(`dado-${i}`).value = Math.floor(Math.random() * 100) + 1;
+    }
+  }
+
+  // Função do cálculo de CRC conforme a fórmula do enunciado
+  function calcularCRC(dados) {
+    let crc = 0;
+    for (let i = 0; i < dados.length; i++) {
+      crc = (crc * 3 + dados[i]) % 97;
+    }
+    return crc;
+  }
+
+  function executarSimulacao() {
+    // 1. Obter os 10 dados de entrada
+    const dadosOriginais = [];
+    for (let i = 0; i < TOTAL_LEITURAS; i++) {
+      const val = parseInt(document.getElementById(`dado-${i}`).value, 10) || 0;
+      dadosOriginais.push(val);
+    }
+
+    // 2. Calcular CRC do Envio
+    const crcEnvio = calcularCRC(dadosOriginais);
+
+    // 3. Simular Ruído (Random de 0 a 10)
+    const ruoresult = Math.floor(Math.random() * 11); // Retorna inteiro de 0 a 10
+    const dadosRecebidos = [...dadosOriginais];
+    let posicaoErro = -1;
+
+    if (ruoresult > 0) {
+      posicaoErro = ruoresult - 1; // Mapeia 1..10 para índice 0..9
+      // Modifica o valor do elemento alterando por um ruído aleatório
+      dadosRecebidos[posicaoErro] += Math.floor(Math.random() * 15) + 1;
+    }
+
+    // 4. Recalcular CRC no Receptor
+    const crcRecebido = calcularCRC(dadosRecebidos);
+
+    // 5. Exibir os Resultados na Tela
+    const painel = document.getElementById('painelResultado');
+    painel.style.display = 'block';
+
+    // Renderizar Dados Originais
+    const containerOrig = document.getElementById('dadosOriginais');
+    containerOrig.innerHTML = dadosOriginais.map(val => `<span class="data-badge">${val}</span>`).join('');
+    document.getElementById('crcEnvioVal').innerText = crcEnvio;
+
+    // Renderizar Detalhes do Ruído
+    const infoRuido = document.getElementById('ruidoInfo');
+    if (ruoresult === 0) {
+      infoRuido.innerHTML = '<strong>Sorteio de Ruído: 0</strong> — Canal limpo! Nenhum dado foi alterado durante a transmissão.';
+    } else {
+      infoRuido.innerHTML = `<strong>Sorteio de Ruído: ${ruoresult}</strong> — Ocorreu interferência no canal! O dado na posição <strong>${ruoresult}</strong> foi corrompido.`;
+    }
+
+    // Renderizar Dados Recebidos
+    const containerRec = document.getElementById('dadosRecebidos');
+    containerRec.innerHTML = dadosRecebidos.map((val, idx) => {
+      const foiCorrompido = (idx === posicaoErro);
+      return `<span class="data-badge ${foiCorrompido ? 'corrupted' : ''}">${val}</span>`;
+    }).join('');
+    document.getElementById('crcRecebidoVal').innerText = crcRecebido;
+
+    // Banner de Validação
+    const statusBanner = document.getElementById('statusBanner');
+    if (crcEnvio === crcRecebido) {
+      statusBanner.className = 'status-banner success';
+      statusBanner.innerHTML = '✅ Transmissão bem-sucedida! CRC_envio = CRC_recebido. Os dados estão íntegros.';
+    } else {
+      statusBanner.className = 'status-banner danger';
+      statusBanner.innerHTML = `⚠️ ERRO DE TRANSMISSÃO DETECTADO! <br> CRC Esperado: ${crcEnvio} | CRC Calculado: ${crcRecebido}`;
+    }
+  }
+
+  // Inicializar formulário na carga da página
+  window.onload = inicializarInputs;
+</script>
+
+</body>
+</html>
